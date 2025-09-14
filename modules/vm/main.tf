@@ -12,13 +12,14 @@ resource "azurerm_network_interface" "this" {
   }
 }
 
+# Linux VM (Ubuntu)
 resource "azurerm_linux_virtual_machine" "this" {
-  count               = var.os_type == "linux" ? var.vm_count : 0
-  name                = "${var.prefix}-${var.environment}-vm-${count.index}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  size                = var.vm_size
-  admin_username      = var.admin_username
+  count                 = var.os_type == "linux" ? var.vm_count : 0
+  name                  = "${var.prefix}-${var.environment}-vm-${count.index}"
+  location              = var.location
+  resource_group_name   = var.resource_group_name
+  size                  = var.vm_size
+  admin_username        = var.admin_username
   network_interface_ids = [element(azurerm_network_interface.this.*.id, count.index)]
 
   admin_ssh_key {
@@ -39,14 +40,15 @@ resource "azurerm_linux_virtual_machine" "this" {
   }
 }
 
+# Windows 11 Enterprise multi-session (AVD)
 resource "azurerm_windows_virtual_machine" "this" {
-  count               = var.os_type == "windows" ? var.vm_count : 0
-  name                = "${var.prefix}-${var.environment}-vm-${count.index}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  size                = var.vm_size
-  admin_username      = var.admin_username
-  admin_password      = var.admin_password
+  count                 = var.os_type == "windows" ? var.vm_count : 0
+  name                  = "${var.prefix}-${var.environment}-vm-${count.index}"
+  location              = var.location
+  resource_group_name   = var.resource_group_name
+  size                  = var.vm_size
+  admin_username        = var.admin_username
+  admin_password        = var.admin_password
   network_interface_ids = [element(azurerm_network_interface.this.*.id, count.index)]
 
   os_disk {
@@ -54,14 +56,16 @@ resource "azurerm_windows_virtual_machine" "this" {
     storage_account_type = "Standard_LRS"
   }
 
+  # ✅ Windows 11 Enterprise multi-session (22H2) for Azure Virtual Desktop
   source_image_reference {
-    publisher = "MicrosoftWindowsServer"
-    offer     = "WindowsServer"
-    sku       = "2019-Datacenter"
+    publisher = "MicrosoftWindowsDesktop"
+    offer     = "windows-11"
+    sku       = "win11-22h2-ent-multi"
     version   = "latest"
   }
 }
 
+# Outputs
 output "vm_ids" {
   value = concat(
     [for vm in azurerm_linux_virtual_machine.this : vm.id],

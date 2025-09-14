@@ -32,10 +32,10 @@ resource "azurerm_linux_virtual_machine" "this" {
     storage_account_type = "Standard_LRS"
   }
 
-  source_image_reference {
+  ource_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts"
     version   = "latest"
   }
 }
@@ -60,7 +60,7 @@ resource "azurerm_windows_virtual_machine" "this" {
   source_image_reference {
     publisher = "MicrosoftWindowsDesktop"
     offer     = "windows-11"
-    sku       = "win11-22h2-ent-multi"
+    sku       = "win11-24h2-ent"
     version   = "latest"
   }
 }

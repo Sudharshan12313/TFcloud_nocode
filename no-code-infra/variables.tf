@@ -1,9 +1,17 @@
-variable "prefix" { type = string }
-variable "environment" { type = string }
-variable "location" { type = string }
+variable "prefix" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
 
 variable "vnet_address_space" {
-  type = list(string)
+  type    = list(string)
   default = ["10.10.0.0/16"]
 }
 
@@ -17,17 +25,67 @@ variable "subnets" {
   ]
 }
 
-variable "create_nsg"       { type = bool default = true }
-variable "nsgs"             { type = list(any) default = [] }
-variable "create_public_ip" { type = bool default = false }
-variable "public_ip_count"  { type = number default = 0 }
+variable "create_nsg" {
+  type    = bool
+  default = true
+}
 
-variable "vm_count"   { type = number default = 1 }
-variable "vm_size"    { type = string default = "Standard_DS1_v2" }
-variable "os_type"    { type = string default = "linux" }
+variable "nsgs" {
+  type    = list(any)
+  default = []
+}
 
-variable "vm_subnet_name" { type = string default = "app" }
+variable "create_public_ip" {
+  type    = bool
+  default = false
+}
 
-variable "admin_username"       { type = string default = "azureuser" }
-variable "admin_password"       { type = string default = "" }
-variable "admin_ssh_public_key" { type = string default = "" }
+variable "public_ip_count" {
+  type    = number
+  default = 0
+}
+
+# -------------------------
+# VM Variables
+# -------------------------
+variable "vm_count" {
+  type    = number
+  default = 1
+}
+
+variable "vm_size" {
+  type    = string
+  default = "Standard_DS1_v2"
+}
+
+variable "os_type" {
+  type    = string
+  default = "linux"
+}
+
+variable "vm_subnet_name" {
+  description = "Subnet where VM NICs will be created"
+  type        = string
+  default     = "app"
+}
+
+variable "vm_nsg_name" {
+  description = "NSG to attach to VM NICs"
+  type        = string
+  default     = "" # ✅ leave empty if no NSG association required
+}
+
+variable "admin_username" {
+  type    = string
+  default = "azureuser"
+}
+
+variable "admin_password" {
+  type    = string
+  default = ""
+}
+
+variable "admin_ssh_public_key" {
+  type    = string
+  default = ""
+}

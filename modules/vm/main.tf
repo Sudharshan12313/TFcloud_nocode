@@ -1,3 +1,4 @@
+# NIC Creation
 resource "azurerm_network_interface" "this" {
   count               = var.vm_count
   name                = "${var.prefix}-${var.environment}-nic-${count.index}"
@@ -12,7 +13,16 @@ resource "azurerm_network_interface" "this" {
   }
 }
 
+# NIC -> NSG Association
+resource "azurerm_network_interface_security_group_association" "this" {
+  count                     = var.vm_count
+  network_interface_id      = azurerm_network_interface.this[count.index].id
+  network_security_group_id = var.nsg_id
+}
+
+# ----------------------
 # Linux VM (Ubuntu)
+# ----------------------
 resource "azurerm_linux_virtual_machine" "this" {
   count                 = var.os_type == "linux" ? var.vm_count : 0
   name                  = "${var.prefix}-${var.environment}-vm-${count.index}"
@@ -32,7 +42,7 @@ resource "azurerm_linux_virtual_machine" "this" {
     storage_account_type = "Standard_LRS"
   }
 
-  ource_image_reference {
+  source_image_reference {
     publisher = "Canonical"
     offer     = "0001-com-ubuntu-server-focal"
     sku       = "20_04-lts"
@@ -40,7 +50,9 @@ resource "azurerm_linux_virtual_machine" "this" {
   }
 }
 
-# Windows 11 Enterprise multi-session (AVD)
+# ----------------------
+# Windows 11 Enterprise (Single-session AVD)
+# ----------------------
 resource "azurerm_windows_virtual_machine" "this" {
   count                 = var.os_type == "windows" ? var.vm_count : 0
   name                  = "${var.prefix}-${var.environment}-vm-${count.index}"
@@ -56,16 +68,18 @@ resource "azurerm_windows_virtual_machine" "this" {
     storage_account_type = "Standard_LRS"
   }
 
-  # ✅ Windows 11 Enterprise multi-session (22H2) for Azure Virtual Desktop
+  # ✅ Windows 11 Enterprise *single-session* (AVD supported)
   source_image_reference {
     publisher = "MicrosoftWindowsDesktop"
     offer     = "windows-11"
-    sku       = "win11-24h2-ent"
+    sku       = "win11-22h2-ent"
     version   = "latest"
   }
 }
 
+# ----------------------
 # Outputs
+# ----------------------
 output "vm_ids" {
   value = concat(
     [for vm in azurerm_linux_virtual_machine.this : vm.id],

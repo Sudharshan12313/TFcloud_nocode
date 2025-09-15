@@ -1,20 +1,35 @@
-variable "prefix" { type = string }
-variable "environment" { type = string }
-variable "location" { type = string }
+variable "prefix" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
 
 variable "vnet_address_space" {
   type = list(string)
 }
 
 variable "subnets" {
+  description = "List of subnets with optional NSG attachment"
   type = list(object({
     name           = string
     address_prefix = string
+    nsg_name       = optional(string) # NEW: optional NSG name for automatic association
   }))
 }
 
-variable "create_nsg" { type = bool default = true }
+variable "create_nsg" {
+  type    = bool
+  default = true
+}
+
 variable "nsgs" {
+  description = "List of NSGs with rules"
   type = list(object({
     name  = string
     rules = list(object({
@@ -32,5 +47,12 @@ variable "nsgs" {
   default = []
 }
 
-variable "create_public_ip" { type = bool default = false }
-variable "public_ip_count"  { type = number default = 0 }
+variable "create_public_ip" {
+  type    = bool
+  default = false
+}
+
+variable "public_ip_count" {
+  type    = number
+  default = 0
+}

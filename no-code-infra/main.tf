@@ -12,11 +12,14 @@ provider "azurerm" {
   features {}
 }
 
+# -------------------------
+# Network Module
+# -------------------------
 module "network" {
-  source     = "../modules/network"
-  prefix     = var.prefix
-  environment= var.environment
-  location   = var.location
+  source      = "../modules/network"
+  prefix      = var.prefix
+  environment = var.environment
+  location    = var.location
 
   vnet_address_space = var.vnet_address_space
   subnets            = var.subnets
@@ -26,6 +29,9 @@ module "network" {
   public_ip_count    = var.public_ip_count
 }
 
+# -------------------------
+# VM Module
+# -------------------------
 module "vm" {
   source      = "../modules/vm"
   prefix      = var.prefix
@@ -36,10 +42,13 @@ module "vm" {
   subnet_id           = module.network.subnet_ids[var.vm_subnet_name]
   public_ip_id        = try(module.network.public_ip_ids[0], null)
 
-  vm_count            = var.vm_count
-  vm_size             = var.vm_size
-  os_type             = var.os_type
-  admin_username      = var.admin_username
-  admin_password      = var.admin_password
-  admin_ssh_public_key= var.admin_ssh_public_key
+  # ✅ NEW: Attach NSG directly to NIC
+  nsg_id = module.network.nsg_ids[var.vm_nsg_name]
+
+  vm_count             = var.vm_count
+  vm_size              = var.vm_size
+  os_type              = var.os_type
+  admin_username       = var.admin_username
+  admin_password       = var.admin_password
+  admin_ssh_public_key = file(var.admin_ssh_public_key)
 }

@@ -1,18 +1,22 @@
 variable "prefix" {
-  type = string
+  type        = string
+  description = "Prefix for all resources (e.g. project name)"
 }
 
 variable "environment" {
-  type = string
+  type        = string
+  description = "Environment (e.g. dev, sit, prod)"
 }
 
 variable "location" {
-  type = string
+  type        = string
+  description = "Azure region"
 }
 
 variable "vnet_address_space" {
-  type    = list(string)
-  default = ["10.10.0.0/16"]
+  type        = list(string)
+  default     = ["10.10.0.0/16"]
+  description = "Virtual network address space"
 }
 
 variable "subnets" {
@@ -23,6 +27,7 @@ variable "subnets" {
   default = [
     { name = "app", address_prefix = "10.10.1.0/24" }
   ]
+  description = "List of subnets"
 }
 
 variable "create_nsg" {
@@ -59,8 +64,14 @@ variable "vm_size" {
 }
 
 variable "os_type" {
-  type    = string
-  default = "linux"
+  type        = string
+  default     = "linux"
+  description = "Choose VM OS type: linux or windows"
+
+  validation {
+    condition     = contains(["linux", "windows"], var.os_type)
+    error_message = "os_type must be either 'linux' or 'windows'."
+  }
 }
 
 variable "vm_subnet_name" {
@@ -72,20 +83,35 @@ variable "vm_subnet_name" {
 variable "vm_nsg_name" {
   description = "NSG to attach to VM NICs"
   type        = string
-  default     = "" # ✅ leave empty if no NSG association required
+  default     = "" # leave empty if no NSG association required
 }
 
 variable "admin_username" {
-  type    = string
-  default = "azureuser"
+  type        = string
+  default     = "azureuser"
+  description = "Admin username for VM login"
 }
 
 variable "admin_password" {
-  type    = string
-  default = ""
+  type        = string
+  default     = null
+  nullable    = true
+  description = "Windows VM password (required if os_type = windows)"
+
+  validation {
+    condition     = var.os_type != "windows" || (var.admin_password != null && length(var.admin_password) > 0)
+    error_message = "You must provide admin_password if os_type is windows."
+  }
 }
 
 variable "admin_ssh_public_key" {
-  type    = string
-  default = ""
+  type        = string
+  default     = null
+  nullable    = true
+  description = "Linux VM SSH public key path (required if os_type = linux)"
+
+  validation {
+    condition     = var.os_type != "linux" || (var.admin_ssh_public_key != null && length(var.admin_ssh_public_key) > 0)
+    error_message = "You must provide admin_ssh_public_key if os_type is linux."
+  }
 }

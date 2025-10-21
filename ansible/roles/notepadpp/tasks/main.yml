@@ -1,0 +1,60 @@
+---
+- name: Install Notepad++ on Windows
+  hosts: windows
+  gather_facts: no
+
+  tasks:
+    - name: Ensure Temp directory exists
+      win_file:
+        path: C:\Temp
+        state: directory
+
+    - name: Determine Notepad++ installer URL
+      set_fact:
+        npp_url: >-
+          {% if npp_version | length > 0 %}
+          https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v{{ npp_version }}/npp.{{ npp_version }}.Installer.x64.exe
+          {% else %}
+          https://api.github.com/repos/notepad-plus-plus/notepad-plus-plus/releases/latest
+          {% endif %}
+
+    - name: Fetch latest Notepad++ release URL if npp_version not set
+      uri:
+        url: "{{ npp_url }}"
+        return_content: yes
+      register: npp_release
+      when: npp_version == ""
+
+    - name: Extract latest Notepad++ installer URL
+      set_fact:
+        npp_latest_url: "{{ npp_release.json.assets | selectattr('name', 'match', 'Installer.x64.exe') | map(attribute='browser_download_url') | first }}"
+      when: npp_version == ""
+
+    - name: Download Notepad++ installer
+      win_get_url:
+        url: "{{ npp_version == '' | ternary(npp_latest_url, npp_url) }}"
+        dest: "{{ npp_installer_path }}"
+
+    - name: Install Notepad++ silently
+      win_package:
+        path: "{{ npp_installer_path }}"
+        arguments: /S
+        state: present
+
+    - name: Add Notepad++ to system PATH
+      win_path:
+        elements:
+          - "{{ npp_install_dir }}"
+        scope: machine
+        state: present
+
+    - name: Verify Notepad++ installation
+      win_stat:
+        path: "{{ npp_install_dir }}\\notepad++.exe"
+      register: npp_check
+
+    - name: Display installation status
+      debug:
+        msg: >-
+          {{ 'Notepad++ successfully installed at ' ~ npp_check.stat.path 
+             if npp_check.stat.exists else 'Notepad++ installation failed.' }}

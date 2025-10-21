@@ -1,11 +1,11 @@
 variable "prefix" {
   type        = string
-  description = "Prefix for all resources (e.g. project name)"
+  description = "Prefix for all resources (e.g., project name)"
 }
 
 variable "environment" {
   type        = string
-  description = "Environment (e.g. dev, sit, prod)"
+  description = "Environment (e.g., dev, sit, prod)"
 }
 
 variable "location" {
@@ -15,7 +15,6 @@ variable "location" {
 
 variable "vnet_address_space" {
   type        = list(string)
-  default     = ["10.10.0.0/16"]
   description = "Virtual network address space"
 }
 
@@ -24,48 +23,57 @@ variable "subnets" {
     name           = string
     address_prefix = string
   }))
-  default = [
-    { name = "app", address_prefix = "10.10.1.0/24" }
-  ]
   description = "List of subnets"
 }
 
 variable "create_nsg" {
-  type    = bool
-  default = true
+  type        = bool
+  description = "Whether to create NSGs"
 }
 
 variable "nsgs" {
-  type    = list(any)
-  default = []
+  type        = list(object({
+    name  = string
+    rules = list(object({
+      name                       = string
+      priority                   = number
+      direction                  = string
+      access                     = string
+      protocol                   = string
+      source_port_range          = string
+      destination_port_range     = string
+      source_address_prefix      = string
+      destination_address_prefix = string
+    }))
+  }))
+  description = "List of NSGs with rules"
 }
 
 variable "create_public_ip" {
-  type    = bool
-  default = false
+  type        = bool
+  description = "Whether to create public IPs"
 }
 
 variable "public_ip_count" {
-  type    = number
-  default = 0
+  type        = number
+  description = "Number of public IPs to create"
 }
 
 # -------------------------
-# VM Variables
+# VM Variables (all required)
 # -------------------------
 variable "vm_count" {
-  type    = number
-  default = 1
+  type        = number
+  description = "Number of VMs to create"
 }
 
 variable "vm_size" {
-  type    = string
-  default = "Standard_DS1_v2"
+  type        = string
+  description = "Size of the VM"
 }
 
 variable "os_type" {
   type        = string
-  default     = "linux"
   description = "Choose VM OS type: linux or windows"
 
   validation {
@@ -75,28 +83,25 @@ variable "os_type" {
 }
 
 variable "vm_subnet_name" {
-  description = "Subnet where VM NICs will be created"
   type        = string
-  default     = "app"
+  description = "Subnet where VM NICs will be created"
 }
 
 variable "vm_nsg_name" {
-  description = "NSG to attach to VM NICs"
   type        = string
-  default     = "" # leave empty if no NSG association required
+  description = "NSG to attach to VM NICs"
 }
 
 variable "admin_username" {
   type        = string
-  default     = "azureuser"
   description = "Admin username for VM login"
 }
 
+# OS-Specific Inputs
 variable "admin_password" {
   type        = string
-  default     = null
-  nullable    = true
   description = "Windows VM password (required if os_type = windows)"
+  nullable    = true
 
   validation {
     condition     = var.os_type != "windows" || (var.admin_password != null && length(var.admin_password) > 0)
@@ -104,14 +109,15 @@ variable "admin_password" {
   }
 }
 
-variable "admin_ssh_public_key" {
+variable "ssh_public_key" {
   type        = string
-  default     = null
-  nullable    = true
   description = "Linux VM SSH public key path (required if os_type = linux)"
+  nullable    = true
 
   validation {
-    condition     = var.os_type != "linux" || (var.admin_ssh_public_key != null && length(var.admin_ssh_public_key) > 0)
-    error_message = "You must provide admin_ssh_public_key if os_type is linux."
+    condition     = var.os_type != "linux" || (var.ssh_public_key != null && length(var.ssh_public_key) > 0)
+    error_message = "You must provide ssh_public_key if os_type is linux."
   }
 }
+
+

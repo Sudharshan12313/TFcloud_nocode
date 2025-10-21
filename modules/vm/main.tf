@@ -34,7 +34,8 @@ resource "azurerm_linux_virtual_machine" "this" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = var.admin_ssh_public_key
+    #public_key = var.admin_ssh_public_key
+    public_key = var.ssh_public_key
   }
 
   os_disk {
@@ -45,7 +46,7 @@ resource "azurerm_linux_virtual_machine" "this" {
   source_image_reference {
     publisher = "Canonical"
     offer     = "0001-com-ubuntu-server-focal"
-    sku       = "20_04-lts"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 }
@@ -68,25 +69,13 @@ resource "azurerm_windows_virtual_machine" "this" {
     storage_account_type = "Standard_LRS"
   }
 
+
   # ✅ Windows 11 Enterprise *single-session* (AVD supported)
   source_image_reference {
     publisher = "MicrosoftWindowsDesktop"
     offer     = "windows-11"
-    sku       = "win11-22h2-ent"
+    sku       = "win11-24h2-ent"
     version   = "latest"
   }
-}
-
-# ----------------------
-# Outputs
-# ----------------------
-output "vm_ids" {
-  value = concat(
-    [for vm in azurerm_linux_virtual_machine.this : vm.id],
-    [for vm in azurerm_windows_virtual_machine.this : vm.id]
-  )
-}
-
-output "private_ips" {
-  value = [for nic in azurerm_network_interface.this : nic.ip_configuration[0].private_ip_address]
+  license_type = "Windows_Client"
 }

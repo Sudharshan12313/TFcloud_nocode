@@ -1,0 +1,14 @@
+[OPTIONS]
+QUIET="True"
+IACCEPTSQLSERVERLICENSETERMS="True"
+ACTION="Install"
+FEATURES={{ sql_features }}
+INSTANCENAME={{ instance_name }}
+SQLSVCACCOUNT={{ sql_svc_account }}
+SQLSYSADMINACCOUNTS={{ sql_sysadmin_accounts }}
+SAPWD={{ sa_password }}
+TCPENABLED=1
+NPENABLED=0
+UPDATEENABLED=0
+INSTALLSQLDATADIR="C:\Program Files\Microsoft SQL Server"
+SQLCOLLATION=SQL_Latin1_General_CP1_CI_AS

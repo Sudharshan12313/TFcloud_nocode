@@ -1,0 +1,8 @@
+---
+- name: Install Notepad++ and SQL Server on Windows
+  hosts: windows
+  gather_facts: no
+  become: yes
+  roles:
+    - notepadpp
+    - sql_server

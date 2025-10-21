@@ -1,0 +1,105 @@
+---
+- name: Install SQL Server 2019 Express + SSMS using config file
+  hosts: windows
+  gather_facts: no
+  tasks:
+
+    - name: Ensure working directories exist
+      win_file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ download_dir }}"
+        - "{{ sql_extract_dir }}"
+
+    - name: Check if SQL installer already exists
+      win_stat:
+        path: "{{ sql_full_exe_path }}"
+      register: installer_stat
+
+    - name: Download SQL Server 2019 Express Advanced installer
+      win_get_url:
+        url: "{{ sql_full_exe_url }}"
+        dest: "{{ sql_full_exe_path }}"
+      when: not installer_stat.stat.exists
+
+    - name: Stop Windows Update service to prevent Access Denied during setup
+      win_service:
+        name: wuauserv
+        state: stopped
+      ignore_errors: yes
+
+    - name: Check if setup.exe already extracted
+      win_stat:
+        path: "{{ sql_extract_dir }}\\SETUP.EXE"
+      register: setup_stat
+
+    - name: Extract SQL Server installer (quiet)
+      win_command: >
+        "{{ sql_full_exe_path }}" /q /x:"{{ sql_extract_dir }}"
+      args:
+        chdir: "{{ download_dir }}"
+      register: extract_result
+      when: not setup_stat.stat.exists
+
+    - name: Display extraction result
+      debug:
+        var: extract_result
+
+    - name: Render SQL Server configuration file
+      win_template:
+        src: sql_conf.ini.j2
+        dest: "{{ download_dir }}\\sql_conf.ini"
+
+    - name: Install SQL Server silently using configuration file
+      win_command: >
+        "{{ sql_extract_dir }}\\SETUP.EXE /ConfigurationFile={{ download_dir }}\\sql_conf.ini"
+      args:
+        chdir: "{{ sql_extract_dir }}"
+      register: install_result
+      ignore_errors: yes
+
+    - name: Display SQL Server installation output
+      debug:
+        var: install_result
+
+    - name: Verify SQL Server services
+      win_shell: |
+        Get-Service | Where-Object { $_.Name -like "MSSQL*" } | Select-Object Name, Status
+      register: sql_services
+      ignore_errors: yes
+
+    - name: Display SQL Server service status
+      debug:
+        var: sql_services.stdout_lines
+
+    - name: Open firewall port for SQL Server TCP 1433
+      win_firewall_rule:
+        name: "Allow SQL Server TCP 1433"
+        localport: 1433
+        action: allow
+        direction: in
+        protocol: tcp
+        state: present
+
+    - name: Check if SSMS installer exists
+      win_stat:
+        path: "{{ ssms_installer_path }}"
+      register: ssms_installer_stat
+
+    - name: Download SQL Server Management Studio installer
+      win_get_url:
+        url: "{{ ssms_url }}"
+        dest: "{{ ssms_installer_path }}"
+      when: not ssms_installer_stat.stat.exists
+
+    - name: Install SSMS silently
+      win_command: "{{ ssms_installer_path }} /Install /Quiet /Norestart /Logs log.txt"
+      args:
+        chdir: "{{ download_dir }}"
+      register: ssms_install
+      ignore_errors: yes
+
+    - name: Display SSMS installation result
+      debug:
+        var: ssms_install

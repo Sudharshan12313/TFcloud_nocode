@@ -1,0 +1,13 @@
+download_dir: "C:\\Temp"
+sql_full_exe_url: "https://download.microsoft.com/download/7/c/1/7c14e92e-bdcb-4f89-b7cf-93543e7112d1/SQLEXPRADV_x64_ENU.exe"
+sql_full_exe_path: "{{ download_dir }}\\SQLEXPRADV_x64_ENU.exe"
+
+sql_extract_dir: "{{ download_dir }}\\SQL2019_Extracted"
+instance_name: "SQLEXPRESS"
+sa_password: "YourStrongPassword123!"
+sql_features: "SQLENGINE"
+sql_sysadmin_accounts: "BUILTIN\\Administrators"
+sql_svc_account: "NT AUTHORITY\\NETWORK SERVICE"
+
+ssms_url: "https://aka.ms/ssmsfullsetup"
+ssms_installer_path: "{{ download_dir }}\\SSMS-Setup-ENU.exe"

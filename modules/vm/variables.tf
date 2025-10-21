@@ -53,7 +53,7 @@ variable "admin_password" {
   default = ""
 }
 
-variable "admin_ssh_public_key" {
+#variable "admin_ssh_public_key" {
+variable "ssh_public_key" {
   type    = string
-  default = ""
 }

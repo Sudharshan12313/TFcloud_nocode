@@ -1,22 +1,8 @@
-terraform {
-  required_version = ">= 1.3.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {}
-}
-
 # -------------------------
 # Network Module
 # -------------------------
 module "network" {
-  source      = "../modules/network"
+  source      = "./network"
   prefix      = var.prefix
   environment = var.environment
   location    = var.location
@@ -33,7 +19,7 @@ module "network" {
 # VM Module
 # -------------------------
 module "vm" {
-  source      = "../modules/vm"
+  source      = "./virtual_machine"
   prefix      = var.prefix
   environment = var.environment
   location    = var.location
@@ -50,5 +36,6 @@ module "vm" {
   os_type              = var.os_type
   admin_username       = var.admin_username
   admin_password       = var.admin_password
-  admin_ssh_public_key = file(var.admin_ssh_public_key)
+  #admin_ssh_public_key = var.admin_ssh_public_key
+  ssh_public_key       = var.ssh_public_key
 }

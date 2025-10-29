@@ -1,65 +1,79 @@
-# ----------------------
-# Resource Group
-# ----------------------
+# Resource Group per VM
 resource "azurerm_resource_group" "this" {
-  name     = "${var.prefix}-${var.environment}-rg"
+  name     = "${var.prefix}-${var.environment}-${var.vm_name}-rg"
   location = var.location
 }
 
-# ----------------------
-# Virtual Network
-# ----------------------
+# Virtual Network unique per VM
 resource "azurerm_virtual_network" "this" {
-  name                = "${var.prefix}-${var.environment}-vnet"
+  name                = "${var.prefix}-${var.environment}-${var.vm_name}-vnet"
+  address_space       = [var.vnet_cidr]
   location            = var.location
   resource_group_name = azurerm_resource_group.this.name
-  address_space       = var.vnet_address_space
 }
 
-# ----------------------
-# Subnets
-# ----------------------
+# Subnet for VM
 resource "azurerm_subnet" "this" {
-  for_each             = { for s in var.subnets : s.name => s }
-  name                 = "${var.prefix}-${var.environment}-subnet-${each.key}"
+  name                 = "${var.prefix}-${var.environment}-${var.vm_name}-subnet"
   resource_group_name  = azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.this.name
-  address_prefixes     = [each.value.address_prefix]
+  address_prefixes     = [var.subnet_cidr]
 }
 
-# ----------------------
-# NSG Creation with dynamic rules
-# ----------------------
+# Optional NSG (will be attached to NIC in vm module)
 resource "azurerm_network_security_group" "this" {
-  for_each            = { for nsg in var.nsgs : nsg.name => nsg }
-  name                = "${var.prefix}-${var.environment}-nsg-${each.value.name}"
+  count               = var.create_nsg ? 1 : 0
+  name                = "${var.prefix}-${var.environment}-${var.vm_name}-nsg"
   location            = var.location
   resource_group_name = azurerm_resource_group.this.name
-
-  dynamic "security_rule" {
-    for_each = each.value.rules
-    content {
-      name                       = security_rule.value.name
-      priority                   = security_rule.value.priority
-      direction                  = security_rule.value.direction
-      access                     = security_rule.value.access
-      protocol                   = security_rule.value.protocol
-      source_port_range          = security_rule.value.source_port_range
-      destination_port_range     = security_rule.value.destination_port_range
-      source_address_prefix      = security_rule.value.source_address_prefix
-      destination_address_prefix = security_rule.value.destination_address_prefix
-    }
-  }
 }
 
-# ----------------------
-# Public IPs (Optional)
-# ----------------------
-resource "azurerm_public_ip" "this" {
-  count               = var.create_public_ip ? var.public_ip_count : 0
-  name                = "${var.prefix}-${var.environment}-pip-${count.index}"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.this.name
-  allocation_method   = "Dynamic"
-  sku                 = "Basic"
+# NSG rules: SSH for Linux, RDP for Windows (source restricted to VNet)
+resource "azurerm_network_security_rule" "ssh_in" {
+  count = var.create_nsg && lower(var.os_type) == "linux" ? 1 : 0
+
+  name                        = "Allow-SSH-In-VNet"
+  priority                    = 100
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = azurerm_virtual_network.this.address_space[0]
+  destination_address_prefix  = "VirtualNetwork"
+  resource_group_name         = azurerm_resource_group.this.name
+  network_security_group_name = azurerm_network_security_group.this[0].name
 }
+
+resource "azurerm_network_security_rule" "rdp_in" {
+  count = var.create_nsg && lower(var.os_type) == "windows" ? 1 : 0
+
+  name                        = "Allow-RDP-In-VNet"
+  priority                    = 101
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "3389"
+  source_address_prefix       = azurerm_virtual_network.this.address_space[0]
+  destination_address_prefix  = "VirtualNetwork"
+  resource_group_name         = azurerm_resource_group.this.name
+  network_security_group_name = azurerm_network_security_group.this[0].name
+}
+
+resource "azurerm_network_security_rule" "out_http_https" {
+  count = var.create_nsg ? 1 : 0
+
+  name                        = "Allow-Out-HTTP-HTTPS"
+  priority                    = 200
+  direction                   = "Outbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "80-443"
+  source_address_prefix       = "VirtualNetwork"
+  destination_address_prefix  = "Internet"
+  resource_group_name         = azurerm_resource_group.this.name
+  network_security_group_name = azurerm_network_security_group.this[0].name
+}
+

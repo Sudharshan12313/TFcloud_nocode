@@ -18,7 +18,7 @@ locals {
 
 # COUNT MODE: create N identical Linux VMs in one RG/location (simple)
 module "linux_count" {
-  source = "./modules/infra"
+  source = "./modules/vm"
   count  = local.use_count ? var.linux_vm_count : 0
 
   prefix              = var.prefix
@@ -38,7 +38,7 @@ module "linux_count" {
 # FOREACH MODE: fully flexible per-VM config lists
 module "linux_vms" {
   for_each = local.use_foreach ? { for vm in var.linux_vms : vm.name => vm } : {}
-  source   = "./modules/infra"
+  source   = "./modules/vm"
 
   prefix              = var.prefix
   environment         = var.environment
@@ -56,7 +56,7 @@ module "linux_vms" {
 
 module "windows_vms" {
   for_each = local.use_foreach ? { for vm in var.windows_vms : vm.name => vm } : {}
-  source   = "./modules/infra"
+  source   = "./modules/vm"
 
   prefix              = var.prefix
   environment         = var.environment

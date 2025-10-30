@@ -1,15 +1,19 @@
-output "vm_private_ips" {
-  value = { for k, m in module.vm : k => try(m.private_ip, null) }
+output "linux_count_vm_ids" {
+  value = local.use_count ? module.linux_count[*].vm_id : []
 }
 
-output "vm_ids" {
-  value = { for k, m in module.vm : k => try(m.vm_id, null) }
+output "linux_foreach_vm_ids" {
+  value = local.use_foreach ? { for k, m in module.linux_vms : k => m.vm_id } : {}
 }
 
-output "nsg_ids" {
-  value = { for k, m in module.network : k => try(m.nsg_id, null) }
+output "windows_foreach_vm_ids" {
+  value = local.use_foreach ? { for k, m in module.windows_vms : k => m.vm_id } : {}
 }
 
-output "rg_names" {
-  value = { for k, m in module.network : k => try(m.resource_group_name, null) }
+output "all_private_ips" {
+  value = merge(
+    local.use_count ? { for i, m in module.linux_count : i => try(m.private_ip, null) } : {},
+    local.use_foreach ? { for k, m in module.linux_vms : k => try(m.private_ip, null) } : {},
+    local.use_foreach ? { for k, m in module.windows_vms : k => try(m.private_ip, null) } : {}
+  )
 }

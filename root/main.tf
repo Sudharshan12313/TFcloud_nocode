@@ -11,37 +11,63 @@ provider "azurerm" {
   features {}
 }
 
-# For each VM config, create network resources and VM using modules
-module "network" {
-  for_each = var.vm_configs
-  source   = "./modules/network"
-
-  prefix     = var.prefix
-  environment = var.environment
-  vm_name    = each.value.vm_name
-  location   = each.value.location
-  vnet_cidr  = each.value.vnet_cidr
-  subnet_cidr = each.value.subnet_cidr
-  create_nsg = each.value.create_nsg
-  os_type    = each.value.os_type
+locals {
+  use_count   = var.mode == "count"
+  use_foreach = var.mode == "foreach"
 }
 
-module "vm" {
-  for_each = var.vm_configs
+# COUNT MODE: create N identical Linux VMs in one RG/location (simple)
+module "linux_count" {
+  source = "./modules/vm"
+  count  = local.use_count ? var.linux_vm_count : 0
+
+  prefix              = var.prefix
+  environment         = var.environment
+  vm_name             = "${var.prefix}-linux-${count.index}"
+  os_type             = "linux"
+  vm_size             = var.linux_vm_size
+  resource_group_name = var.common_resource_group_name
+  location            = var.common_location
+  vnet_cidr           = var.common_vnet_cidr
+  subnet_cidr         = var.common_subnet_cidr
+  create_nsg          = var.common_create_nsg
+  admin_username      = var.admin_username
+  ssh_public_key      = var.ssh_public_key
+}
+
+# FOREACH MODE: fully flexible per-VM config lists
+module "linux_vms" {
+  for_each = local.use_foreach ? { for vm in var.linux_vms : vm.name => vm } : {}
   source   = "./modules/vm"
 
   prefix              = var.prefix
   environment         = var.environment
-  vm_name             = each.value.vm_name
-  location            = each.value.location
+  vm_name             = each.value.name
+  os_type             = "linux"
   vm_size             = each.value.vm_size
-  os_type             = lower(each.value.os_type)
-  admin_username      = each.value.admin_username
-  admin_password      = lookup(each.value, "admin_password", null)
-  ssh_public_key      = lookup(each.value, "ssh_public_key", null)
+  resource_group_name = each.value.resource_group_name
+  location            = each.value.location
+  vnet_cidr           = each.value.vnet_cidr
+  subnet_cidr         = each.value.subnet_cidr
+  create_nsg          = each.value.create_nsg
+  admin_username      = var.admin_username
+  ssh_public_key      = var.ssh_public_key
+}
 
-  # Network outputs from network module
-  resource_group_name = module.network[each.key].resource_group_name
-  subnet_id           = module.network[each.key].subnet_id
-  nsg_id              = module.network[each.key].nsg_id
+module "windows_vms" {
+  for_each = local.use_foreach ? { for vm in var.windows_vms : vm.name => vm } : {}
+  source   = "./modules/vm"
+
+  prefix              = var.prefix
+  environment         = var.environment
+  vm_name             = each.value.name
+  os_type             = "windows"
+  vm_size             = each.value.vm_size
+  resource_group_name = each.value.resource_group_name
+  location            = each.value.location
+  vnet_cidr           = each.value.vnet_cidr
+  subnet_cidr         = each.value.subnet_cidr
+  create_nsg          = each.value.create_nsg
+  admin_username      = var.admin_username
+  admin_password      = each.value.admin_password
 }

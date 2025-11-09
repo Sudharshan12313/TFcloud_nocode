@@ -1,0 +1,61 @@
+---
+- name: Install PostgreSQL on Debian/Ubuntu
+  apt:
+    name: "{{ postgres_packages_ubuntu }}"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install PostgreSQL on CentOS/RHEL
+  yum:
+    name: "{{ postgres_packages_centos }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Initialize PostgreSQL database (CentOS only)
+  command: /usr/bin/postgresql-setup initdb
+  args:
+    creates: /var/lib/pgsql/data/PG_VERSION
+  when: ansible_os_family == "RedHat"
+
+- name: Enable and start PostgreSQL service
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create PostgreSQL user
+  become_user: postgres
+  postgresql_user:
+    name: "{{ postgres_user }}"
+    password: "{{ postgres_password }}"
+    role_attr_flags: CREATEDB,LOGIN
+
+- name: Create PostgreSQL database
+  become_user: postgres
+  postgresql_db:
+    name: "{{ postgres_db }}"
+    owner: "{{ postgres_user }}"
+
+- name: Check PostgreSQL service status
+  shell: systemctl is-active postgresql
+  register: service_status
+  changed_when: false
+
+- name: Verify database and user existence
+  become_user: postgres
+  shell: |
+    psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='{{ postgres_user }}';"
+    psql -tAc "SELECT 1 FROM pg_database WHERE datname='{{ postgres_db }}';"
+  register: verification
+  changed_when: false
+
+- name: Display verification results
+  debug:
+    msg: |
+      ✅ PostgreSQL service status: {{ service_status.stdout }}
+      ✅ Database & User verification: {{ verification.stdout_lines }}
+
+- name: Confirm setup completion
+  debug:
+    msg: "🎉 PostgreSQL installation and configuration completed successfully on {{ inventory_hostname }}!"

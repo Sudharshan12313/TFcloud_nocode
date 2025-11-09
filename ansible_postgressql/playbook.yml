@@ -1,0 +1,11 @@
+---
+- name: Install and configure PostgreSQL on Linux
+  hosts: ubuntu,centos
+  become: yes
+  roles:
+    - postgres_linux
+
+- name: Install and configure PostgreSQL on Windows
+  hosts: windows
+  roles:
+    - postgres_windows

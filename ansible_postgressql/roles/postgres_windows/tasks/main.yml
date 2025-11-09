@@ -1,0 +1,49 @@
+---
+- name: Ensure PostgreSQL directory exists
+  win_file:
+    path: "{{ postgres_install_dir }}"
+    state: directory
+
+- name: Download PostgreSQL installer
+  win_get_url:
+    url: "{{ postgres_installer_url }}"
+    dest: "{{ postgres_install_dir }}\\postgresql-installer.exe"
+
+- name: Install PostgreSQL silently
+  win_package:
+    path: "{{ postgres_install_dir }}\\postgresql-installer.exe"
+    arguments: '--mode unattended --unattendedmodeui none --superpassword "{{ postgres_admin_password }}"'
+    state: present
+
+- name: Ensure PostgreSQL service is running
+  win_service:
+    name: postgresql-x64-{{ postgres_version }}
+    state: started
+    start_mode: auto
+
+- name: Create PostgreSQL user and database
+  win_shell: |
+    "C:\Program Files\PostgreSQL\{{ postgres_version }}\bin\psql.exe" -U postgres -d postgres -c "CREATE USER {{ postgres_user }} WITH PASSWORD '{{ postgres_password }}';"
+    "C:\Program Files\PostgreSQL\{{ postgres_version }}\bin\psql.exe" -U postgres -d postgres -c "CREATE DATABASE {{ postgres_db }} OWNER {{ postgres_user }};"
+  args:
+    executable: cmd
+  environment:
+    PGPASSWORD: "{{ postgres_admin_password }}"
+
+- name: Verify PostgreSQL user and database
+  win_shell: |
+    "C:\Program Files\PostgreSQL\{{ postgres_version }}\bin\psql.exe" -U postgres -d postgres -c "SELECT usename FROM pg_user WHERE usename='{{ postgres_user }}';"
+    "C:\Program Files\PostgreSQL\{{ postgres_version }}\bin\psql.exe" -U postgres -d postgres -c "SELECT datname FROM pg_database WHERE datname='{{ postgres_db }}';"
+  args:
+    executable: cmd
+  environment:
+    PGPASSWORD: "{{ postgres_admin_password }}"
+  register: verify_output
+
+- debug:
+    msg: |
+      ✅ PostgreSQL verification output:
+      {{ verify_output.stdout }}
+
+- debug:
+    msg: "🎉 PostgreSQL installed, configured, and verified successfully on {{ inventory_hostname }}!"

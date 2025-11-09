@@ -1,0 +1,8 @@
+---
+postgres_version: 14
+postgres_install_dir: "C:\\PostgreSQL"
+postgres_installer_url: "https://get.enterprisedb.com/postgresql/postgresql-14.5-1-windows-x64.exe"
+postgres_admin_password: "Admin@123"
+postgres_user: "testuser"
+postgres_password: "testpass"
+postgres_db: "testdb"

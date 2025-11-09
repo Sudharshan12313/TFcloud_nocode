@@ -1,0 +1,12 @@
+---
+postgres_packages_ubuntu:
+  - postgresql
+  - postgresql-contrib
+
+postgres_packages_centos:
+  - postgresql-server
+  - postgresql-contrib
+
+postgres_user: testuser
+postgres_password: testpass
+postgres_db: testdb
